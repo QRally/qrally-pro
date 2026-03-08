@@ -7,13 +7,39 @@
     <link rel="manifest" href="manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Architects+Daughter&display=swap" rel="stylesheet">
     <style>
-        :root { --yellow: #ffcc00; --dark-bg: #121212; --card-bg: #1e1e1e; --btn-bg: #2d2d2d; --handwriting: 'Architects Daughter', cursive; --text: #fff; }
+        /* Base Variables - Night Mode (Default) */
+        :root { 
+            --yellow: #ffcc00; 
+            --dark-bg: #121212; 
+            --card-bg: #1e1e1e; 
+            --btn-bg: #2d2d2d; 
+            --btn-text: #ffffff; 
+            --desc-text: #bbbbbb;
+            --handwriting: 'Architects Daughter', cursive; 
+            --text: #ffffff; 
+        }
         
-        /* Theme Overrides */
-        body.day-mode { --dark-bg: #d4d4d4; --card-bg: #e0e0e0; --btn-bg: #c0c0c0; --text: #1a1a1a; }
-        body.day-mode #preview-window { background: #eee; border-color: #999; color: #000; }
+        /* Day Mode Overrides - High Contrast for sunlight */
+        body.day-mode { 
+            --dark-bg: #d4d4d4; 
+            --card-bg: #f0f0f0; 
+            --btn-bg: #ffffff; 
+            --btn-text: #000000; 
+            --desc-text: #333333;
+            --text: #1a1a1a; 
+        }
+        body.day-mode #preview-window { background: #ffffff; border-color: #999; color: #000; }
+        body.day-mode #stage-name { background: #eee !important; color: #000 !important; border: 1px solid #ccc !important; }
 
-        body.dusk-mode { --dark-bg: #1a1c2c; --card-bg: #252a45; --btn-bg: #353b5f; --text: #e0e0e0; }
+        /* Dusk Mode Overrides */
+        body.dusk-mode { 
+            --dark-bg: #1a1c2c; 
+            --card-bg: #252a45; 
+            --btn-bg: #353b5f; 
+            --btn-text: #e0e0e0; 
+            --desc-text: #aaa;
+            --text: #e0e0e0; 
+        }
         body.dusk-mode #preview-window { background: #0f111a; border-color: #353b5f; color: #4deeea; }
 
         body { font-family: sans-serif; background: var(--dark-bg); color: var(--text); margin: 0; padding: 10px; display: flex; justify-content: center; transition: 0.3s; overflow-x: hidden; }
@@ -34,3 +60,236 @@
         .cols-4 { grid-template-columns: repeat(4, 1fr); }
         .cols-6 { grid-template-columns: repeat(6, 1fr); }
 
+        /* General Button Styles */
+        button { 
+            transition: 0.1s; 
+            touch-action: manipulation; 
+            border-radius: 12px; 
+            font-weight: bold; 
+            color: var(--btn-text); 
+            border: 1px solid #444; 
+            background: var(--btn-bg); 
+            cursor: pointer;
+        }
+        button:active { transform: scale(0.95); opacity: 0.8; }
+        
+        .btn-util { font-size: 0.65rem; padding: 15px 2px; border: none; border-radius: 8px; text-align: center; }
+        
+        .btn-dir { border: 2px solid var(--yellow); color: var(--yellow); height: 65px; font-size: 1.6rem; }
+        .btn-desc { min-height: 55px; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; text-align: center; line-height: 1.1; color: var(--desc-text); }
+        .btn-sym { color: var(--yellow) !important; font-size: 1.4rem !important; }
+        .btn-dist { background: var(--yellow); color: black; border: none; height: 60px; font-size: 1.3rem; }
+
+        #clear-btn.holding { background: #f00 !important; color: #fff; }
+
+        @media print {
+            #app-interface { display: none !important; }
+            #print-area { display: block !important; font-family: var(--handwriting); }
+            .note-grid { display: grid; grid-template-columns: repeat(5, 1fr); border-top: 2px solid black; }
+            .note-box { height: 140px; border-bottom: 2px solid black; border-right: 1px solid #eee; text-align: center; display: flex; flex-direction: column; justify-content: center; font-size: 18pt; }
+        }
+        #print-area { display: none; }
+    </style>
+</head>
+<body onload="checkRecovery()">
+
+<div id="app-interface">
+    <div class="grid" style="grid-template-columns: 1fr 65px; gap: 10px;">
+        <input type="text" id="stage-name" placeholder="STAGE NAME" oninput="autoSave()" style="background:#000; color:var(--yellow); border:1px solid #444; padding:12px; border-radius:10px; font-family:var(--handwriting); font-size:1.1rem; width: 100%; box-sizing: border-box;">
+        <button onclick="cycleTheme()" id="theme-btn" style="font-size: 0.8rem;">NIGHT</button>
+    </div>
+
+    <div id="preview-window">
+        <div id="speed-readout">GPS: OFF</div>
+        <span id="display-text">...</span>
+        <span id="log-counter" style="font-size:0.7rem; color:#666; margin-top:5px;">0 CALLS RECORDED</span>
+    </div>
+
+    <div class="grid cols-2">
+        <button class="btn-dir" onclick="tap('L')">L</button>
+        <button class="btn-dir" onclick="tap('R')">R</button>
+    </div>
+    
+    <div class="grid cols-6">
+        <button onclick="tap('6')">6</button><button onclick="tap('5')">5</button><button onclick="tap('4')">4</button>
+        <button onclick="tap('3')">3</button><button onclick="tap('2')">2</button><button onclick="tap('1')">1</button>
+    </div>
+
+    <div class="grid cols-4">
+        <button class="btn-desc" onclick="tap('Crest')">Crest</button>
+        <button class="btn-desc" onclick="tap('Into')">Into</button>
+        <button class="btn-desc btn-sym" onclick="tap('>')">></button>
+        <button class="btn-desc btn-sym" onclick="tap('<')"><</button>
+        <button class="btn-desc" onclick="tap('D.Cut')">D.Cut</button>
+        <button class="btn-desc" onclick="tap('Jump')">Jump</button>
+        <button class="btn-desc" onclick="tap('Slippy')">Slippy</button>
+        <button class="btn-desc" onclick="tap('Care')">Care</button>
+    </div>
+
+    <div class="grid cols-4">
+        <button class="btn-dist" onclick="tap('50', true)">50</button>
+        <button class="btn-dist" onclick="tap('100', true)">100</button>
+        <button class="btn-dist" onclick="tap('200', true)">200</button>
+        <button class="btn-dist" onclick="tap('300', true)">300</button>
+    </div>
+
+    <div class="grid cols-3" style="margin-top: 15px; gap: 10px;">
+        <button class="btn-util" id="recce-btn" style="background:#424; color:#f9f" onclick="toggleRecceMode()">RECCE</button>
+        <button class="btn-util" style="background:#422; color:#f99" onclick="undo()">UNDO</button>
+        <button class="btn-util" id="clear-btn" style="background:#555; color:#fff">HOLD CLEAR</button>
+        <button class="btn-util" id="trip-btn" style="background:#333; color:#bbb" onclick="resetTrip()">TRIP R</button>
+        <button class="btn-util" id="auto-btn" style="background:#224; color:#99f" onclick="toggleAutoSave()">AUTO OFF</button>
+        <button class="btn-util" style="background:#242; color:#9f9" onclick="doPrint()">PRINT</button>
+    </div>
+</div>
+
+<div id="print-area">
+    <div style="display:flex; justify-content:space-between; border-bottom:2px solid black; padding-bottom:5px; margin-bottom:20px;">
+        <h1 id="print-title" style="margin:0;">STAGE NOTES</h1>
+        <span id="print-date"></span>
+    </div>
+    <div id="print-rows" class="note-grid"></div>
+</div>
+
+<script>
+    /* ... (Logic remains identical to previous version) ... */
+    let currentBuffer = []; let savedNotes = []; 
+    let watchID = null; let maxSpeed = 0;
+    let totalTrip = 0; let lastPos = null; let tripOffset = 0;
+    let autoSaveActive = false;
+    let themeIndex = 0;
+
+    function cycleTheme() {
+        themeIndex = (themeIndex + 1) % 3;
+        const body = document.body;
+        const btn = document.getElementById('theme-btn');
+        body.classList.remove('day-mode', 'dusk-mode');
+        if (themeIndex === 1) { body.classList.add('day-mode'); btn.innerText = "DAY"; }
+        else if (themeIndex === 2) { body.classList.add('dusk-mode'); btn.innerText = "DUSK"; }
+        else { btn.innerText = "NIGHT"; }
+    }
+
+    function tap(val, isFinal = false) {
+        currentBuffer.push(val);
+        if (isFinal) { save(); } else { updateDisplay(); }
+    }
+
+    function updateDisplay() {
+        document.getElementById('display-text').innerText = currentBuffer.length > 0 ? currentBuffer.join(" ") : "...";
+    }
+
+    function save() {
+        if (currentBuffer.length === 0) return;
+        savedNotes.push(currentBuffer.join(" "));
+        currentBuffer = []; updateDisplay();
+        document.getElementById('log-counter').innerText = `${savedNotes.length} CALLS RECORDED`;
+        if (autoSaveActive) autoSave();
+    }
+
+    function toggleAutoSave() {
+        autoSaveActive = !autoSaveActive;
+        const btn = document.getElementById('auto-btn');
+        btn.innerText = autoSaveActive ? "AUTO ON" : "AUTO OFF";
+        btn.style.background = autoSaveActive ? "#228" : "#224";
+        if (autoSaveActive) autoSave();
+    }
+
+    function autoSave() {
+        if (!autoSaveActive) return;
+        localStorage.setItem('qrally_data', JSON.stringify({
+            name: document.getElementById('stage-name').value,
+            notes: savedNotes,
+            trip: totalTrip + tripOffset
+        }));
+    }
+
+    function checkRecovery() {
+        const raw = localStorage.getItem('qrally_data');
+        if (raw) {
+            const data = JSON.parse(raw);
+            if (confirm("Recover data for " + (data.name || "unnamed stage") + "?")) {
+                document.getElementById('stage-name').value = data.name;
+                savedNotes = data.notes;
+                totalTrip = data.trip;
+                document.getElementById('log-counter').innerText = `${savedNotes.length} CALLS RECOVERED`;
+            }
+        }
+    }
+
+    function calcDistance(lat1, lon1, lat2, lon2) {
+        const R = 3958.8; 
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    function toggleRecceMode() {
+        const speedEl = document.getElementById('speed-readout');
+        const btn = document.getElementById('recce-btn');
+        if (watchID === null) {
+            if ("geolocation" in navigator) {
+                watchID = navigator.geolocation.watchPosition((pos) => {
+                    const lat = pos.coords.latitude; const lon = pos.coords.longitude;
+                    const mph = Math.round(pos.coords.speed * 2.237) || 0;
+                    if (lastPos) {
+                        const dist = calcDistance(lastPos.lat, lastPos.lon, lat, lon);
+                        if (dist > 0.0004 && mph > 1.5) totalTrip += dist;
+                    }
+                    lastPos = { lat, lon };
+                    if (mph > maxSpeed) maxSpeed = mph;
+                    speedEl.innerText = `TRIP: ${(totalTrip + tripOffset).toFixed(2)}mi | SPEED: ${mph} (MAX: ${maxSpeed})`;
+                    if (themeIndex === 1) speedEl.style.color = "#111";
+                    else if (themeIndex === 2) speedEl.style.color = "#4deeea";
+                    else speedEl.style.color = "var(--yellow)";
+                }, null, { enableHighAccuracy: true });
+                btn.style.boxShadow = "0 0 10px #f9f";
+            }
+        } else {
+            navigator.geolocation.clearWatch(watchID); watchID = null; lastPos = null;
+            speedEl.innerText = "GPS: OFF"; speedEl.style.color = "#888"; btn.style.boxShadow = "none";
+        }
+    }
+
+    function resetTrip() { totalTrip = 0; tripOffset = 0; if (autoSaveActive) autoSave(); }
+
+    let clearTimer;
+    const clearBtn = document.getElementById('clear-btn');
+    ['mousedown', 'touchstart'].forEach(evt => clearBtn.addEventListener(evt, () => {
+        clearBtn.classList.add('holding');
+        clearTimer = setTimeout(() => {
+            savedNotes = []; currentBuffer = []; maxSpeed = 0; totalTrip = 0; tripOffset = 0;
+            localStorage.removeItem('qrally_data');
+            updateDisplay();
+            document.getElementById('log-counter').innerText = "0 CALLS RECORDED";
+            document.getElementById('speed-readout').innerText = watchID ? "TRIP: 0.00mi | SPEED: 0 (MAX: 0)" : "GPS: OFF";
+            clearBtn.classList.remove('holding');
+        }, 1500);
+    }));
+    ['mouseup', 'touchend'].forEach(evt => clearBtn.addEventListener(evt, () => {
+        clearTimeout(clearTimer); clearBtn.classList.remove('holding');
+    }));
+
+    function undo() {
+        if (currentBuffer.length > 0) currentBuffer.pop();
+        else if (savedNotes.length > 0) currentBuffer = savedNotes.pop().split(" ");
+        updateDisplay();
+        document.getElementById('log-counter').innerText = `${savedNotes.length} CALLS RECORDED`;
+        if (autoSaveActive) autoSave();
+    }
+
+    function doPrint() {
+        if (currentBuffer.length > 0) save();
+        const stageTitle = document.getElementById('stage-name').value || "STAGE NOTES";
+        document.getElementById('print-title').innerText = stageTitle;
+        document.getElementById('print-date').innerText = new Date().toLocaleDateString();
+        const container = document.getElementById('print-rows');
+        container.innerHTML = "";
+        savedNotes.forEach(note => {
+            const box = document.createElement('div'); box.className = 'note-box'; box.innerText = note; container.appendChild(box);
+        });
+        window.print();
+    }
+</script>
+</body>
+</html>
