@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>QRally Pro v1.1.13</title>
+    <link rel="manifest" href="manifest.json">
     <style>
         :root { 
             --bg: #1a1a1a; --card: #222; --text: #ffcc00; 
@@ -26,7 +27,6 @@
         .btn-pencil { background: #555; color: #fff; }
         .btn-print { background: #1a4a1a; grid-column: span 4; margin-top: 8px; height: 50px; }
 
-        /* Preview Grid */
         #preview-area { width: 100%; max-width: 450px; background: white; color: var(--note-color); margin-top: 20px; padding: 15px; border-radius: 5px; box-sizing: border-box; min-height: 200px; }
         .notes-grid { display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid var(--grid-line); border-left: 1px solid var(--grid-line); }
         .note-cell { 
@@ -84,15 +84,13 @@
 
     <div id="preview-area">
         <h2 id="preview-title" style="margin:0 0 10px 0; font-family:sans-serif; text-transform: uppercase; color: black;">QRally</h2>
-        <div class="notes-grid" id="main-grid">
-            </div>
+        <div class="notes-grid" id="main-grid"></div>
     </div>
 
     <script>
         let gridData = [""];
         let currentIndex = 0;
 
-        // Initialize display
         renderGrid();
 
         function updateTitle() {
@@ -100,7 +98,6 @@
         }
 
         function buildCall(val) {
-            // Append with space, trim to prevent double spaces
             gridData[currentIndex] = (gridData[currentIndex] + " " + val).trim();
             renderGrid();
         }
@@ -143,12 +140,20 @@
         function renderGrid() {
             const grid = document.getElementById('main-grid');
             grid.innerHTML = "";
-            
             gridData.forEach((content, i) => {
                 const cell = document.createElement('div');
                 cell.className = "note-cell" + (i === currentIndex ? " active-cell" : "");
                 cell.innerText = content;
                 grid.appendChild(cell);
+            });
+        }
+
+        // 2. ADDED SERVICE WORKER REGISTRATION BELOW
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW Registered'))
+                    .catch(err => console.log('SW Registration Failed', err));
             });
         }
     </script>
