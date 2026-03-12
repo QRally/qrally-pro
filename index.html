@@ -5,15 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>QRally Pro v1.1.13</title>
     <style>
-        :root { --bg: #1a1a1a; --card: #222; --text: #ffcc00; --btn: #333; --grid-line: #ccc; --note-color: #000; }
+        :root { 
+            --bg: #1a1a1a; --card: #222; --text: #ffcc00; 
+            --btn: #333; --grid-line: #ccc; --note-color: #000; 
+            --active-border: #ffcc00;
+        }
         body { background: var(--bg); color: #eee; font-family: sans-serif; margin: 0; padding: 10px; display: flex; flex-direction: column; align-items: center; }
-        body.pencil-mode { --grid-line: #eee; --note-color: #555; }
+        body.pencil-mode { --grid-line: #999; --note-color: #444; }
         
-        /* UI Elements */
-        .hud { width: 100%; max-width: 450px; background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 10px; border: 1px solid #333; }
-        input { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 5px; font-size: 1.1rem; }
+        .hud { width: 100%; max-width: 450px; background: var(--card); border-radius: 12px; padding: 15px; margin-bottom: 10px; border: 1px solid #333; box-sizing: border-box; }
+        input { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 5px; font-size: 1.1rem; box-sizing: border-box; }
+        
         .grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; max-width: 450px; }
-        button { background: var(--btn); border: 1px solid #444; color: #eee; padding: 12px 2px; border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer; }
+        button { background: var(--btn); border: 1px solid #444; color: #eee; padding: 12px 2px; border-radius: 8px; font-weight: bold; font-size: 0.95rem; cursor: pointer; transition: 0.1s; }
+        button:active { transform: scale(0.95); background: #444; }
         
         .btn-dir { border: 2px solid var(--text); color: var(--text); height: 70px; font-size: 1.8rem; grid-column: span 2; }
         .btn-dist { background: var(--text); color: #000; }
@@ -22,22 +27,28 @@
         .btn-print { background: #1a4a1a; grid-column: span 4; margin-top: 8px; height: 50px; }
 
         /* Preview Grid */
-        #preview-area { width: 100%; max-width: 450px; background: white; color: var(--note-color); margin-top: 20px; padding: 15px; border-radius: 5px; box-sizing: border-box; }
-        .notes-grid { display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid var(--grid-line); }
-        .note-cell { border: 1px solid var(--grid-line); height: 100px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: bold; text-align: center; background: white; color: inherit; }
+        #preview-area { width: 100%; max-width: 450px; background: white; color: var(--note-color); margin-top: 20px; padding: 15px; border-radius: 5px; box-sizing: border-box; min-height: 200px; }
+        .notes-grid { display: grid; grid-template-columns: repeat(5, 1fr); border-top: 1px solid var(--grid-line); border-left: 1px solid var(--grid-line); }
+        .note-cell { 
+            border-right: 1px solid var(--grid-line); 
+            border-bottom: 1px solid var(--grid-line); 
+            height: 80px; display: flex; align-items: center; justify-content: center; 
+            font-size: 1rem; font-weight: bold; text-align: center; background: white; 
+        }
+        .active-cell { outline: 2px solid var(--active-border); outline-offset: -2px; background: #fffdf0; }
 
         @media print {
             .hud, .grid-container, .btn-next, .btn-print, button { display: none !important; }
             body { background: white !important; padding: 0; margin: 0; }
             #preview-area { width: 100% !important; max-width: none !important; margin: 0 !important; }
-            .note-cell { height: 140px; font-size: 1.5rem; }
+            .note-cell { height: 120px; font-size: 1.4rem; }
         }
     </style>
 </head>
 <body>
 
     <div class="hud">
-        <input type="text" id="stage-name" value="QRally">
+        <input type="text" id="stage-name" value="QRally" oninput="updateTitle()">
         <div id="counter" style="text-align:center; font-size: 0.8rem; margin-top:5px; color:#888;">Box 1 active</div>
     </div>
 
@@ -55,8 +66,8 @@
         <button onclick="buildCall('Into')">Into</button>
         <button onclick="buildCall('Jump')">Jump</button>
         <button onclick="buildCall('Slippy')">Slippy</button>
-        <button onclick="buildCall('>')">></button>
-        <button onclick="buildCall('<')"><</button>
+        <button onclick="buildCall('>')">&gt;</button>
+        <button onclick="buildCall('&lt;')">&lt;</button>
 
         <button class="btn-dist" onclick="buildCall('50')">50</button>
         <button class="btn-dist" onclick="buildCall('100')">100</button>
@@ -72,18 +83,25 @@
     </div>
 
     <div id="preview-area">
-        <h2 id="preview-title" style="margin:0 0 10px 0; font-family:sans-serif; text-transform: uppercase;">QRally</h2>
+        <h2 id="preview-title" style="margin:0 0 10px 0; font-family:sans-serif; text-transform: uppercase; color: black;">QRally</h2>
         <div class="notes-grid" id="main-grid">
-            <div class="note-cell active-cell" id="cell-0"></div>
-        </div>
+            </div>
     </div>
 
     <script>
         let gridData = [""];
         let currentIndex = 0;
 
+        // Initialize display
+        renderGrid();
+
+        function updateTitle() {
+            document.getElementById('preview-title').innerText = document.getElementById('stage-name').value;
+        }
+
         function buildCall(val) {
-            gridData[currentIndex] += val + " ";
+            // Append with space, trim to prevent double spaces
+            gridData[currentIndex] = (gridData[currentIndex] + " " + val).trim();
             renderGrid();
         }
 
@@ -96,7 +114,7 @@
             currentIndex++;
             gridData[currentIndex] = "";
             renderGrid();
-            document.getElementById('counter').innerText = "Box " + (currentIndex + 1) + " active";
+            updateCounter();
         }
 
         function togglePencil() {
@@ -107,26 +125,31 @@
 
         function undo() {
             if (gridData[currentIndex].length > 0) {
-                let parts = gridData[currentIndex].trim().split(" ");
+                let parts = gridData[currentIndex].split(" ");
                 parts.pop();
-                gridData[currentIndex] = parts.join(" ") + (parts.length > 0 ? " " : "");
+                gridData[currentIndex] = parts.join(" ");
             } else if (currentIndex > 0) {
                 gridData.pop();
                 currentIndex--;
             }
             renderGrid();
+            updateCounter();
+        }
+
+        function updateCounter() {
+            document.getElementById('counter').innerText = "Box " + (currentIndex + 1) + " active";
         }
 
         function renderGrid() {
             const grid = document.getElementById('main-grid');
             grid.innerHTML = "";
+            
             gridData.forEach((content, i) => {
                 const cell = document.createElement('div');
-                cell.className = "note-cell";
+                cell.className = "note-cell" + (i === currentIndex ? " active-cell" : "");
                 cell.innerText = content;
                 grid.appendChild(cell);
             });
-            document.getElementById('preview-title').innerText = document.getElementById('stage-name').value;
         }
     </script>
 </body>
