@@ -1,4 +1,4 @@
-const CACHE_NAME = 'qrally-v1';
+const CACHE_NAME = 'qrally-v2';
 const ASSETS = [
   './',
   './index.html',
